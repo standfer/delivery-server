@@ -1,5 +1,5 @@
 <?php
-include 'delivery\db\config.php';
+include 'delivery/db/config.php';
 
 function courierList() {
     $query = "select id, name from couriers order by name";

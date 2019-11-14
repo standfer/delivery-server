@@ -20,7 +20,7 @@ if ($get_action != NULL) {
 }
 
 switch ($action) {
-    case NULL: //если форма без параметров вызвана и action остался null
+    case NULL: //РµСЃР»Рё С„РѕСЂРјР° Р±РµР· РїР°СЂР°РјРµС‚СЂРѕРІ РІС‹Р·РІР°РЅР° Рё action РѕСЃС‚Р°Р»СЃСЏ null
         echo '';
         break;
     case 'updateCourierLocation':
@@ -47,8 +47,8 @@ switch ($action) {
     case 'getCourier':
         echo updateCourierData();
         break;
-    default: //не описанные параметры
-        echo 'э бля, чето я не знаю такого параметра';
+    default: //РЅРµ РѕРїРёСЃР°РЅРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹
+        echo 'СЌ Р±Р»СЏ, С‡РµС‚Рѕ СЏ РЅРµ Р·РЅР°СЋ С‚Р°РєРѕРіРѕ РїР°СЂР°РјРµС‚СЂР°';
         break;
 }
 
@@ -139,11 +139,10 @@ function updateDTOCourierLocation() {
     $lng = $courier->currentCoordinate->lng;
     $idCourierLocation = getCourierLocationId($id);
 
-    $sql = "update locations set latitude = '$lat', longitude = '$lng' where id = '$idCourierLocation'";
+    $sql = "update locations set latitude = '$lat', longitude = '$lng', update_ts = now() where id = '$idCourierLocation'";
     $queryResult = mysql_query($sql);
+	saveLog($sql, $id);
     
-    saveLog($sql, $id);
-
     $gotInCycle = false;
 
     //apply orders to courier->orders
@@ -308,7 +307,7 @@ function updateCourierData() {
 }
 
 function saveLog($logString, $name) {
-    $fileName = $_SERVER['DOCUMENT_ROOT'] . "/domains/standfer231.myjino.ru/delivery/logs/couriers/courier_" . $name . "_log.txt";
+    $fileName = $_SERVER['DOCUMENT_ROOT'] . "/delivery/logs/couriers/courier_" . $name . "_log.txt";
     $currentDateTime = date("Y-m-d H:i:s");
     file_put_contents($fileName, "[" . $currentDateTime . "] " . $logString . "\r\n", FILE_APPEND);
 }

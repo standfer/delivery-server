@@ -1,22 +1,15 @@
 <?php
-
-include '../db/config.php';
 include '../dto/Order.php';
 include '../dto/ProductInOrder.php';
 
-//$conn = mysql_connect("localhost", "046797347_root", "2.718281828");
-//mysql_select_db('standfer231_delivery', $conn);
-//$conn = mysql_connect("localhost", "root", "root");
-//mysql_select_db('delivery', $conn);
+$conn = mysql_connect("localhost", "root", "root");
+mysql_select_db('delivery', $conn);
 
 
 $post_action = filter_input(INPUT_POST, 'action');
-$get_action = filter_input(INPUT_GET, 'action');
-if ($post_action != NULL) {
+if ($post_action!=NULL) {
     $action = $post_action;
-}
-if ($get_action != NULL) {
-    $action = $get_action;
+    
 }
 
 switch ($action) {
@@ -25,13 +18,13 @@ switch ($action) {
         break;
     case 'updateCourierLocation':
         echo updateCourierLocation();
-        break;
+        break;	
     case 'updateDTOCourierLocation':
         echo updateDTOCourierLocation();
         break;
     case 'getCourierIdByCredentials':
         echo getCourierIdByCredentials();
-        break;
+        break;	
     case 'getCourierDataById':
         echo getCourierDataById();
         break;
@@ -52,80 +45,118 @@ switch ($action) {
         break;
 }
 
-function updateCourierLocation() {// not need now
-    $courierRequest = json_decode($_POST['courier']);
 
-    $courier = (isset($courierRequest->id)) ? $courierRequest : '';
-    $id = $courier->id;
-    $lat = $courier->currentCoordinate->lat;
-    $lng = $courier->currentCoordinate->lng;
-
-    $sql = "update locations set latitude = '$lat', longitude = '$lng' where id = '$id'";
-    $queryResult = mysql_query($sql);
-
-    //apply orders to courier->orders
-    $qOrdersList = mysql_query("select * from locations_orders where idCourier = '$id' and isAssigned = 1");
-    $ordersList = array();
-    while ($qOrder = mysql_fetch_array($qOrdersList)) {
-        extract($qOrder);
+function updateCourierLocation() {
+	$courierRequest = json_decode($_POST['courier']);
+	
+	$courier = (isset($courierRequest->id)) ? $courierRequest : '';
+	$id = $courier->id;
+	$lat = $courier->currentCoordinate->lat;
+	$lng = $courier->currentCoordinate->lng;
+	
+	$sql = "update locations set latitude = '$lat', longitude = '$lng' where id = '$id'";
+	$queryResult = mysql_query($sql);
+        
+        //apply orders to courier->orders
+	$qOrdersList = mysql_query("select * from locations_orders where idCourier = '$id'");
+	$ordersList = array();
+	while($qOrder = mysql_fetch_array($qOrdersList)){
+		extract($qOrder);
 //                $courier->orders->address = $addressOrder;
 //                $courier->orders->phoneNumber = $phoneNumber;
 //                $courier->orders->cost = cost;
-        $ordersList[] = array("idOrder" => $idOrder,
+		$ordersList[] = array("idOrder" => $idOrder,
+                                      "address" => $addressOrder,
+                                      "lat" => $latOrder,
+                                      "lng" => $lngOrder,
+                                      "phoneNumber" => $phoneNumber,
+                                      "cost" => $cost,
+                                      "isDelivered" => $isDelivered,
+                                      "idWorkplace" => $idWorkplace,
+                                      "addressWorkplace" => $addressWorkplace,
+                                      "latWorkPlace" => $latWorkPlace,
+                                      "lngWorkPlace" => $lngWorkPlace,
+                                      "priority" => $priority,
+                                      "odd" => $odd,
+                                      "notes" => $orderNotes,
+                                      "idClient" => $idClient,
+                                      "clientName" => $clientName,
+                                      "clientPhone" => $clientPhone
+                                        );
+	}
+	$json = array("infos" => $ordersList);
+        
+	 
+	if($queryResult){
+		$response = array("status" => 1, "msg" => "Courier location updated");
+	}else{
+		$response = array("status" => 0, "msg" => "Error location updating");
+	}
+	
+	
+	 
+	return json_encode($json, JSON_UNESCAPED_UNICODE);//$response;
+}
+
+function getOrdersUnassigned1() {
+    $qOrdersUnassigned = mysql_query("SELECT * FROM ordersByWorkplaces WHERE idCourier IS NULL"); // AND deliver_ts > NOW()");
+
+    while ($qOrder = mysql_fetch_array($qOrdersUnassigned)) {
+        extract($qOrder);
+
+        $workPlaceLocation = array(
+            "latitude" => $latWorkPlace,
+            "longitude" => $lngWorkPlace
+        );
+
+        $orderLocation = array(
+            "latitude" => $latOrder,
+            "longitude" => $lngOrder
+        );
+
+        $workPlace = array(
+            "id" => $idWorkPlace,
+            "address" => $addressWorkPlace,
+            "location" => $workPlaceLocation
+        );
+
+        $orders[] = array(
+            "id" => $idOrder,
             "address" => $addressOrder,
-            "lat" => $latOrder,
-            "lng" => $lngOrder,
             "phoneNumber" => $phoneNumber,
             "cost" => $cost,
-            "isDelivered" => $isDelivered,
-            "idWorkplace" => $idWorkplace,
-            "addressWorkplace" => $addressWorkplace,
-            "latWorkPlace" => $latWorkPlace,
-            "lngWorkPlace" => $lngWorkPlace,
-            "priority" => $priority,
-            "odd" => $odd,
-            "notes" => $orderNotes,
-            "idClient" => $idClient,
-            "clientName" => $clientName,
-            "clientPhone" => $clientPhone
+            "create_ts" => $create_ts,
+            "deliver_ts" => $deliver_ts,
+            "location" => $orderLocation,
+            "workPlace" => $workPlace
         );
     }
-    $json = array("infos" => $ordersList);
+    $json = array("orders" => $orders);
 
-
-    if ($queryResult) {
-        $response = array("status" => 1, "msg" => "Courier location updated");
-    } else {
-        $response = array("status" => 0, "msg" => "Error location updating");
-    }
-
-
-
-    return json_encode($json, JSON_UNESCAPED_UNICODE); //$response;
+    return json_encode($json, JSON_UNESCAPED_UNICODE);
 }
 
 function getOrdersUnassigned() {
-    $courierRequest = json_decode($_POST['courier']);
-
-    $courier = (isset($courierRequest->id)) ? $courierRequest : '';
-    $id = $courier->id;
-    $lat = $courier->currentCoordinate->lat;
-    $lng = $courier->currentCoordinate->lng;
-
-    $queryResult = mysql_query("select * from locations_orders where idCourier = '$id' and (isAssigned is null or isAssigned = 0)");
+    $orders = null;
+    $queryResult = mysql_query("SELECT * FROM ordersByWorkplaces WHERE idCourier IS NULL"); // AND deliver_ts > NOW()");
     while ($rowOrder = mysql_fetch_array($queryResult)) {
         extract($rowOrder);
-        $order = new Order($idOrder, $addressOrder, $latOrder, $lngOrder, $phoneNumber, $cost, $isAssigned, $isDelivered, $idWorkplace, $addressWorkplace, $latWorkPlace, $lngWorkPlace, $priority, $odd, $orderNotes, $idClient, $clientName, $clientPhone
+        $order = new Order($idOrder, 
+                $addressOrder, $latOrder, $lngOrder, 
+                $phoneNumber, $cost, $isDelivered, 
+                $idWorkPlace, $addressWorkPlace, 
+                $latWorkPlace, $lngWorkPlace, 
+                $priority, $odd, $orderNotes, 
+                null, null, null
         );
-        getOrderProducts($order);
         $orders[] = $order;
     }
     $json = array("orders" => $orders);
 
     if ($queryResult) {
-        $response = array("status" => 1, "msg" => "Courier location updated");
+        $response = array("status" => 1, "msg" => "Unassigned order successfully got");
     } else {
-        $response = array("status" => 0, "msg" => "Error location updating");
+        $response = array("status" => 0, "msg" => "Error getting unassigned order");
     }
     return json_encode($json, JSON_UNESCAPED_UNICODE);
 }
@@ -137,36 +168,36 @@ function updateDTOCourierLocation() {
     $id = $courier->id;
     $lat = $courier->currentCoordinate->lat;
     $lng = $courier->currentCoordinate->lng;
-    $idCourierLocation = getCourierLocationId($id);
 
-    $sql = "update locations set latitude = '$lat', longitude = '$lng' where id = '$idCourierLocation'";
+    $sql = "update locations set latitude = '$lat', longitude = '$lng' where id = '$id'";
     $queryResult = mysql_query($sql);
-    
-    saveLog($sql, $id);
-
-    $gotInCycle = false;
 
     //apply orders to courier->orders
-    //$queryResult = mysql_query("select * from locations_orders where idCourier = '$id' and isAssigned = 1");//if assignment switch off
-    $queryResult = mysql_query("select * from locations_orders where idCourier = '$id'");//if assignment switch off
-        while ($rowOrder = mysql_fetch_array($queryResult)) {
-            extract($rowOrder);
-            $order = new Order($idOrder, $addressOrder, $latOrder, $lngOrder, $phoneNumber, $cost, $isAssigned, $isDelivered, $idWorkplace, $addressWorkplace, $latWorkPlace, $lngWorkPlace, $priority, $odd, $orderNotes, $idClient, $clientName, $clientPhone
-            );
-            //$order->productsInOrder[] = getOrderProducts($order);
-            getOrderProducts($order);
-            $orders[] = $order; //add $order to $ordersList array
-            $gotInCycle = true;
+    $queryResult = mysql_query("select * from locations_orders where idCourier = '$id'");
+    while ($rowOrder = mysql_fetch_array($queryResult)) {
+        extract($rowOrder);
+        $order = new Order($idOrder,
+                  $addressOrder, $latOrder, $lngOrder,
+                  $phoneNumber, $cost, $isDelivered,
+                  $idWorkplace, $addressWorkplace,
+                  $latWorkPlace, $lngWorkPlace,
+                  $priority, $odd, $orderNotes,
+                  $idClient, $clientName, $clientPhone
+                );
+        //$order->productsInOrder[] = getOrderProducts($order);
+        getOrderProducts($order);
+        $orders[] = $order; //add $order to $ordersList array
+        
+        
     }
-        if ($gotInCycle == false) return null;
-        $json = array("orders" => $orders);
+    $json = array("orders" => $orders);
 
-        if ($queryResult) {
-            $response = array("status" => 1, "msg" => "Courier location updated");
-        } else {
-            $response = array("status" => 0, "msg" => "Error location updating");
-        }
-    return json_encode($json, JSON_UNESCAPED_UNICODE);
+    if ($queryResult) {
+        $response = array("status" => 1, "msg" => "Courier location updated");
+    } else {
+        $response = array("status" => 0, "msg" => "Error location updating");
+    }
+return json_encode($json, JSON_UNESCAPED_UNICODE);
 }
 
 function getOrderProducts(Order $order) {
@@ -174,17 +205,18 @@ function getOrderProducts(Order $order) {
 
     $sql = "select * from productsByOrders where idOrder = '$id'";
     $queryResult = mysql_query($sql);
-
+    
     while ($rowProductInOrder = mysql_fetch_array($queryResult)) {
         extract($rowProductInOrder);
-        $productInOrder = new ProductInOrder($idProductInOrder, $quantity, $order, $idProduct, $name, $price
+        $productInOrder = new ProductInOrder($idProductInOrder, $quantity, $order,
+                $idProduct, $name, $price
         );
 
         //$productsInOrder[] = $productInOrder;
         $order->productsInOrder[] = $productInOrder;
     }
     //$arrayProductsInOrder = array("productsInOrder" => $productsInOrder);
-
+    
     return $order->productsInOrder;
 }
 
@@ -196,7 +228,7 @@ function getCourierIdByCredentials() {
     $password = $courier->password;
 
     $result = mysql_query("select id from couriers where login = '$login' and password = '$password'");
-
+    
     //$id = mysql_re //mysql_fetch_array($idResult);
     $id = mysql_result($result, 0);
     if ($result) {
@@ -233,19 +265,6 @@ function getCourierDataById() {
     return json_encode($json, JSON_UNESCAPED_UNICODE);
 }
 
-function getCourierLocationId($idCourier) {
-    $result = mysql_query("select idLocation from couriers where id = '$idCourier'");
-    $id = mysql_result($result, 0);
-
-    if ($result) {
-        $response = array("status" => 1, "msg" => "Got location successfull");
-    } else {
-        $response = array("status" => 0, "msg" => "Got location failed");
-    }
-
-    return $id;
-}
-
 function assignOrdersToCourier() {
     $courierRequest = json_decode($_POST['courier']);
 
@@ -256,8 +275,8 @@ function assignOrdersToCourier() {
 
     $queryBuilder = "";
 
-    if ($ordersToAssign != null) {
-        $queryBuilder = "UPDATE orders set idCourier = '$idCourier', isAssigned = 1 where";
+    if ($ordersToAssign != NIL) {
+        $queryBuilder = "UPDATE orders set idCourier = '$idCourier' where";
         foreach ($ordersToAssign as $orderToAssign) {
             $idOrder = $orderToAssign->id;
 
@@ -307,11 +326,6 @@ function updateCourierData() {
     return $response;
 }
 
-function saveLog($logString, $name) {
-    $fileName = $_SERVER['DOCUMENT_ROOT'] . "/domains/standfer231.myjino.ru/delivery/logs/couriers/courier_" . $name . "_log.txt";
-    $currentDateTime = date("Y-m-d H:i:s");
-    file_put_contents($fileName, "[" . $currentDateTime . "] " . $logString . "\r\n", FILE_APPEND);
-}
 
 @mysql_close($conn);
 
