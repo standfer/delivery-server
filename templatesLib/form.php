@@ -3,6 +3,7 @@
     Телефон: <input type="text" name="phoneNumber" value="<?= e($row['phoneNumber']) ?>"><br>
     Стоимость заказа: <input type="text" name="cost" value="<?= e($row['cost']) ?>"><br>
     Статус заказа: <input type="text" name="isDelivered" value="<?= e($row['isDelivered']) ?>"><br>
+    Курьер подтвердил: <input type="text" name="isAssigned" value="<?= e($row['isAssigned']) ?>"><br>
     <input type="hidden" name="id" value="<?= e($row['id']) ?>">
     <input type="submit"><br>
 </form>

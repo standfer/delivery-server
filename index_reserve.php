@@ -189,7 +189,7 @@ function e($str) {
 </html>
 
 <?php
-$idCourier = isset($_POST['name']) ? mysql_real_escape_string($_POST['name']) : ""; //"https://maps.googleapis.com/maps/api/js?key=AIzaSyAuYrvwL2UuYpIJHS7bPQkg4adOUge0xng&callback=initMap" //"https://maps.googleapis.com/maps/api/js?key=AIzaSyDL3x6fuef-LHFGqipd_itXaO4xwQevoYA&callback=initMap"
+$idCourier = isset($_POST['name']) ? mysql_real_escape_string($_POST['name']) : "";
 $response = '';
 $id = 1;
 

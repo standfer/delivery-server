@@ -139,16 +139,15 @@ function updateDTOCourierLocation() {
     $lng = $courier->currentCoordinate->lng;
     $idCourierLocation = getCourierLocationId($id);
 
-    $sql = "update locations set latitude = '$lat', longitude = '$lng' where id = '$idCourierLocation'";
+    $sql = "update locations set latitude = '$lat', longitude = '$lng', update_ts = now() where id = '$idCourierLocation'";
     $queryResult = mysql_query($sql);
+	saveLog($sql, $id);
     
-    saveLog($sql, $id);
-
     $gotInCycle = false;
 
     //apply orders to courier->orders
-    //$queryResult = mysql_query("select * from locations_orders where idCourier = '$id' and isAssigned = 1");//if assignment switch off
-    $queryResult = mysql_query("select * from locations_orders where idCourier = '$id'");//if assignment switch off
+    $queryResult = mysql_query("select * from locations_orders where idCourier = '$id' and isAssigned = 1");//if assignment switch off
+    //$queryResult = mysql_query("select * from locations_orders where idCourier = '$id'");//if assignment switch off
         while ($rowOrder = mysql_fetch_array($queryResult)) {
             extract($rowOrder);
             $order = new Order($idOrder, $addressOrder, $latOrder, $lngOrder, $phoneNumber, $cost, $isAssigned, $isDelivered, $idWorkplace, $addressWorkplace, $latWorkPlace, $lngWorkPlace, $priority, $odd, $orderNotes, $idClient, $clientName, $clientPhone
@@ -253,11 +252,15 @@ function assignOrdersToCourier() {
     $idCourier = $courierRequest->id;
     $ordersToAssign = $courierRequest->ordersToAssign;
     $idOrderFirst = $ordersToAssign[0]->id;
+    
+    
+//    saveLog("courier='$courierRequest',\r\n" .
+//            "idOrderFirst='$idOrderFirst',\r\n", "assignOrdersToCourier");
 
     $queryBuilder = "";
 
     if ($ordersToAssign != null) {
-        $queryBuilder = "UPDATE orders set idCourier = '$idCourier', isAssigned = 1 where";
+        $queryBuilder = "UPDATE orders set isAssigned = 1 where";
         foreach ($ordersToAssign as $orderToAssign) {
             $idOrder = $orderToAssign->id;
 
@@ -267,9 +270,11 @@ function assignOrdersToCourier() {
             } else {
                 $queryBuilder .= " or id = '$idOrder'";
             }
+            saveLog("queryBuilder='$queryBuilder',\r\n", "assignOrdersToCourier");
         }
     }
 
+    saveLog("queryBuilder='$queryBuilder'", "assignOrdersToCourier");
     $result = $queryBuilder != "" ? mysql_query($queryBuilder) : "";
 
     if ($result) {
@@ -277,8 +282,10 @@ function assignOrdersToCourier() {
     } else {
         $response = array("status" => 0, "msg" => "Orders assigning failed");
     }
-
-    return $response;
+    
+    return $response; //"courier='$courier',\r\n" .
+//           "idCourier='$idCourier',\r\n" .
+//            "idOrderFirst='$idOrderFirst',\r\n";
 }
 
 function updateCourierData() {
@@ -308,7 +315,7 @@ function updateCourierData() {
 }
 
 function saveLog($logString, $name) {
-    $fileName = $_SERVER['DOCUMENT_ROOT'] . "/domains/standfer231.myjino.ru/delivery/logs/couriers/courier_" . $name . "_log.txt";
+    $fileName = $_SERVER['DOCUMENT_ROOT'] . "/delivery/logs/couriers/courier_" . $name . "_log.txt";
     $currentDateTime = date("Y-m-d H:i:s");
     file_put_contents($fileName, "[" . $currentDateTime . "] " . $logString . "\r\n", FILE_APPEND);
 }
