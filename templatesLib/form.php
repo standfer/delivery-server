@@ -30,10 +30,6 @@
     
     <input type="hidden" name="id" value="<?= e($row['id']) ?>">
     <input type="submit" value="Сохранить изменения">
-    <?php if ($row['id']): ?>
-        <input type="hidden" name="delete" value="<?= e($row['id']) ?>">
-        <input type="submit" value="Удалить назначение"><br>
-    <?php endif ?>
 </form>
 
 <a href="?">Вернуться к списку</a>
