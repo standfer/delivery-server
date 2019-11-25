@@ -172,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 				return htmlspecialchars($str, ENT_QUOTES, 'utf-8');
 			}
 		?>
-        Назначение курьера
+        <h3>Назначение курьера</h3>
         <form action="" method="post">
 <!--            <input type='text' name='inputCourier' placeholder='Курьер...' />
             <input type='text' name='inputWorkPlace' placeholder='Организация производитель...' />-->
